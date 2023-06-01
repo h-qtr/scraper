@@ -2,48 +2,31 @@ import requests
 from bs4 import BeautifulSoup
 import streamlit as st
 
-def scrape_data(url):
+def scrape_wikipedia(url):
     # Send a GET request to the URL
     response = requests.get(url)
+    
+    # Create a BeautifulSoup object
+    soup = BeautifulSoup(response.content, 'html.parser')
+    
+    # Find the main content div on the page
+    content_div = soup.find(id='mw-content-text')
+    
+    # Find all the paragraphs within the content div
+    paragraphs = content_div.find_all('p')
+    
+    # Extract the text from the paragraphs
+    text = '\n'.join([p.get_text() for p in paragraphs])
+    
+    return text
 
-    if response.status_code == 200:
-        # Create a BeautifulSoup object to parse the HTML content
-        soup = BeautifulSoup(response.content, 'html.parser')
+# Define the URL to scrape
+url = 'https://en.wikipedia.org/wiki/Library_Genesis'
 
-        # Find the desired elements on the page
-        product_titles = soup.find_all('h5', class_='product-title')
-        product_prices = soup.find_all('div', class_='price-box')
+# Scrape the data
+data = scrape_wikipedia(url)
 
-        # Extract the data from the found elements
-        titles = [title.text.strip() for title in product_titles]
-        prices = [price.text.strip() for price in product_prices]
-
-        # Return the scraped data
-        return titles, prices
-    else:
-        st.error('Failed to retrieve data from the website.')
-
-# Streamlit UI
-st.title('Web Data Scraper')
-
-# URL input field
-url = st.text_input('Enter the URL')
-
-# Scrape button
-if st.button('Scrape'):
-    if url:
-        titles, prices = scrape_data(url)
-        if titles and prices:
-            # Display the scraped data
-            st.header('Product Titles:')
-            for title in titles:
-                st.write(title)
-
-            st.header('Product Prices:')
-            for price in prices:
-                st.write(price)
-        else:
-            st.warning('No data found on the webpage.')
-    else:
-        st.warning('Please enter a URL.')
-
+# Use Streamlit to display the scraped data
+st.title("Web Data Scraper")
+st.header("Scraped Content from Wikipedia")
+st.text(data)
