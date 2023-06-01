@@ -3,28 +3,47 @@ from bs4 import BeautifulSoup
 import streamlit as st
 
 def scrape_data(url):
+    # Send a GET request to the URL
     response = requests.get(url)
-    soup = BeautifulSoup(response.content, 'html.parser')
 
-    # Extract relevant data from the webpage
-    title = soup.find('h1', class_='product-title').text.strip()
-    price = soup.find('span', class_='price-sales').text.strip()
-    description = soup.find('div', class_='product-details-description').text.strip()
+    if response.status_code == 200:
+        # Create a BeautifulSoup object to parse the HTML content
+        soup = BeautifulSoup(response.content, 'html.parser')
 
-    return title, price, description
+        # Find the desired elements on the page
+        product_titles = soup.find_all('h5', class_='product-title')
+        product_prices = soup.find_all('div', class_='price-box')
 
-# Streamlit web app
+        # Extract the data from the found elements
+        titles = [title.text.strip() for title in product_titles]
+        prices = [price.text.strip() for price in product_prices]
+
+        # Return the scraped data
+        return titles, prices
+    else:
+        st.error('Failed to retrieve data from the website.')
+
+# Streamlit UI
 st.title('Web Data Scraper')
-url = st.text_input('Enter the URL to scrape')
 
+# URL input field
+url = st.text_input('Enter the URL')
+
+# Scrape button
 if st.button('Scrape'):
     if url:
-        try:
-            title, price, description = scrape_data(url)
-            st.write('Title:', title)
-            st.write('Price:', price)
-            st.write('Description:', description)
-        except Exception as e:
-            st.write('Error occurred:', str(e))
+        titles, prices = scrape_data(url)
+        if titles and prices:
+            # Display the scraped data
+            st.header('Product Titles:')
+            for title in titles:
+                st.write(title)
+
+            st.header('Product Prices:')
+            for price in prices:
+                st.write(price)
+        else:
+            st.warning('No data found on the webpage.')
     else:
-        st.write('Please enter a URL to scrape.')
+        st.warning('Please enter a URL.')
+
